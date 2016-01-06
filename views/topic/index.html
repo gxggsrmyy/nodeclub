@@ -8,7 +8,7 @@
     </div>
   </div>
 
-  <% if (typeof(current_user) !== 'undefined' && !current_user.isAdvanced) { %>
+  <% if (!current_user || !current_user.isAdvanced) { %>
     <%- partial('../_ads') %>
   <% } %>
 
@@ -45,79 +45,76 @@
 
 <div id='content'>
   <div class='panel'>
-    <div class='header'>
+    <div class='header topic_header'>
       <span class="topic_full_title">
 
         <%- partial('./_top_good', {topic: topic}) %>
 
         <%= topic.title %>
       </span>
-
       <div class="changes">
         <span>
-          发布于 <%= topic.friendly_create_at %>
+          发布于 <%= topic.create_at_ago() %>
+        </span>
+        <span>
+          作者 <a href="/user/<%= topic.author.loginname %>"><%= topic.author.loginname %></a>
         </span>
         <span>
           <%= topic.visit_count %> 次浏览
         </span>
-        <% if (topic.friendly_create_at != topic.friendly_update_at) { %>
+        <% if (topic.create_at_ago() != topic.update_at_ago()) { %>
           <span>
-            最后一次编辑是 <%= topic.friendly_update_at %>
+            最后一次编辑是 <%= topic.update_at_ago() %>
           </span>
         <% } %>
         <% if (topic.tab) { %>
-          <span>来自 <%= topic.tabName %></span>
+          <span> 来自 <%= topic.tabName %></span>
         <%}%>
       </div>
-      <% if (typeof(current_user) !== 'undefined') { %>
+      <% if (current_user) { %>
       <div id="manage_topic">
         <% if (current_user.is_admin) { %>
 
-        <% if (topic.top) { %>
-        <a href='/topic/<%= topic._id %>/top/0'>
-          <img class='user_icon'
-               src='<%- staticFile("/public/images/star_fav_icon&16.png") %>'
-               title='取消置顶'/>
+        <a href='/topic/<%= topic._id %>/top' data-method="post">
+          <% if (topic.top) { %>
+            <i class="fa fa-lg fa-star-o" title='取消置顶'></i>
+          <% } else { %>
+            <i class="fa fa-lg fa-star" title='置顶'/></i>
+          <% } %>
         </a>
-        <% } else { %>
-        <a href='/topic/<%= topic._id %>/top/1'>
-          <img class='user_icon'
-               src='<%- staticFile("/public/images/star_fav_empty_icon&16.png") %>'
-               title='置顶'/>
-        </a>
-        <% } %>
 
-        <% if (topic.good) { %>
-        <a href='/topic/<%= topic._id %>/good/0'>
-          取消精华
+
+        <a href='/topic/<%= topic._id %>/good' data-method="post">
+          <% if (topic.good) { %>
+            <i class="fa fa-lg fa-heart-o" title="取消精华"></i>
+          <% } else { %>
+            <i class="fa fa-lg fa-heart" title="加精华"></i>
+          <% } %>
         </a>
-        <% } else { %>
-        <a href='/topic/<%= topic._id %>/good/1'>
-          设为精华
+
+        <a href='/topic/<%= topic._id %>/lock' data-method="post">
+          <% if (topic.lock) { %>
+            <i class="fa fa-lg fa-unlock" title='取消锁定'></i>
+          <% } else { %>
+            <i class="fa fa-lg fa-lock" title='锁定（不可再回复）'/></i>
+          <% } %>
         </a>
-        <% } %>
+
 
         <a href='/topic/<%= topic._id %>/edit'>
-          <img
-                  class='user_icon'
-                  src='<%- staticFile("/public/images/doc_edit_icon&16.png") %>'
-                  title='编辑'/></a>
+          <i class="fa fa-lg fa-pencil-square-o" title='编辑'></i></a>
         <a href='javascript:;'
            data-id="<%= topic._id %>"
-           class='delete_topic_btn'><img class='user_icon'
-                                         src='<%- staticFile("/public/images/trash_icon&16.png") %>'
-                                         title='删除'/></a>
+           class='delete_topic_btn'>
+           <i class="fa fa-lg fa-trash" title='删除'></i></a>
         <% } else { %>
-        <% if (current_user._id == topic.author_id) { %>
+        <% if (current_user._id.equals(topic.author_id)) { %>
         <a href='/topic/<%= topic._id %>/edit'>
-          <img class='user_icon'
-               src='<%- staticFile("/public/images/doc_edit_icon&16.png") %>'
-               title='编辑'/></a>
+          <i class="fa fa-lg fa-pencil-square-o" title='编辑'></i></a>
         <a href='javascript:;'
            data-id="<%= topic._id %>"
-           class='delete_topic_btn'><img class='user_icon'
-           src='<%- staticFile("/public/images/trash_icon&16.png") %>'
-           title='删除'/></a>
+           class='delete_topic_btn'>
+           <i class="fa fa-lg fa-trash" title='删除'></i></a>
         <% } %>
         <% } %>
       </div>
@@ -126,20 +123,7 @@
     <div class='inner topic'>
 
       <div class='topic_content'>
-        <%- markdown(topic.content) %>
-      </div>
-
-      <div class="action">
-        <span class='span-success' id='share_weibo_btn'
-              onclick="((function(s,d,e,r,l,p,t,z,c){var f='http://v.t.sina.com.cn/share/share.php?appkey=<%= config.weibo_key %>',u=z||d.location,p=['&url=',e(u),'&title=',e(t||d.title),'&source=',e(r),'&sourceUrl=',e(l),'&content=',c||'gb2312','&pic=',e(p||'')].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=440,height=430,left=',(s.width-440)/2,',top=',(s.height-430)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent))setTimeout(a,0);else a();})(screen,document,encodeURIComponent,'','','','分享来自<%= config.name %>的话题：<%= topic.title %>','',''));"
-                >分享到微博</span>
-        <% if (typeof(current_user) !== 'undefined') { %>
-        <% if (!topic.in_collection) { %>
-        <span class='span-common span-success' id='collect_btn' action='collect'>加入收藏</span>
-        <% } else { %>
-        <span class='span-common span-success' id='collect_btn' action='de_collect'>取消收藏</span>
-        <% } %>
-        <% } %>
+        <%- markdown(topic.linkedContent) %>
       </div>
     </div>
   </div>
@@ -151,7 +135,7 @@
     <%- partial('../reply/reply', topic.replies) %>
   </div>
   <% } %>
-  <% if (typeof(current_user) !== 'undefined' && typeof(topic) !== 'undefined') { %>
+  <% if (current_user && typeof(topic) !== 'undefined') { %>
   <div class='panel'>
     <div class='header'>
       <span class='col_fade'>添加回复</span>
@@ -164,7 +148,7 @@
             <textarea class='editor' name='r_content' rows='8'></textarea>
 
             <div class='editor_buttons'>
-              <input class='span-primary submit_btn' type="submit" data-loading-text="回复中.." value="回复">
+              <input class='span-primary submit_btn' type="submit" data-loading-text="回复中.." value="回复<%= topic.lock ? '(此主题已锁定)' : ''%>" <%= topic.lock ? 'disabled="disabled"' : ''%>>
             </div>
           </div>
 
@@ -177,10 +161,15 @@
   <% } %>
 </div>
 
-<% if (typeof(current_user) !== 'undefined' && typeof(topic) !== 'undefined') { %>
+<div class="replies_history">
+  <div class="inner_content"></div>
+  <div class="anchor"></div>
+</div>
+
+
+<% if (current_user && typeof(topic) !== 'undefined') { %>
 <!-- markdown editor -->
 <%- Loader('/public/editor.min.js')
-.js('/public/libs/marked.js')
 .js('/public/libs/editor/editor.js')
 .js('/public/libs/webuploader/webuploader.withoutimage.js')
 .js('/public/libs/editor/ext.js')
@@ -192,6 +181,7 @@
     var allNames = $('.reply_author').map(function (idx, ele) {
       return $(ele).text().trim();
     }).toArray();
+    allNames.push($('.user_card .user_name').text())
     allNames = _.uniq(allNames);
     // END 获取所有回复者name
 
@@ -206,46 +196,33 @@
       //绑定editor
       $(this).data('editor', editor);
 
-      var $input = $(editor.codemirror.display.input).keydown(function(event){
+      var $input = $(editor.codemirror.display.input);
+      $input.keydown(function(event){
         if (event.keyCode === 13 && (event.ctrlKey || event.metaKey)) {
           event.preventDefault();
           $el.closest('form').submit();
         }
       });
-      var isAtInserted = false;
+
+      // at.js 配置
+      var codeMirrorGoLineUp = CodeMirror.commands.goLineUp;
+      var codeMirrorGoLineDown = CodeMirror.commands.goLineDown;
+      var codeMirrorNewlineAndIndent = CodeMirror.commands.newlineAndIndent;
       $input.atwho({
         at: '@',
         data: allNames
-      }).on("inserted.atwho", function() {
-        isAtInserted = true;
+      })
+      .on('shown.atwho', function () {
+        CodeMirror.commands.goLineUp = _.noop;
+        CodeMirror.commands.goLineDown = _.noop;
+        CodeMirror.commands.newlineAndIndent = _.noop;
+      })
+      .on('hidden.atwho', function () {
+        CodeMirror.commands.goLineUp = codeMirrorGoLineUp;
+        CodeMirror.commands.goLineDown = codeMirrorGoLineDown;
+        CodeMirror.commands.newlineAndIndent = codeMirrorNewlineAndIndent;
       });
-      editor.codemirror.on('update', function(){
-        if(isAtInserted === false){
-          return false;
-        }
-        isAtInserted = false;
-        var line = editor.codemirror.lastLine();
-        var name = editor.codemirror.getLine(line);
-        editor.codemirror.removeLine(line);
-        line--;
-        var txt = editor.codemirror.getLine(line);
-        var lastLen = txt.length;
-        var pre = [];
-        for(var i=txt.length-1; i >= 0; i--){
-          if(txt[i] === '@'){
-            lastLen = i;
-            break;
-          }
-          else{
-            pre.push(txt[i]);
-          }
-        }
-        pre.reverse();
-        if(-1 !== name.indexOf(pre.join(''))){
-          txt = txt.substring(0, lastLen + 1);
-        }
-        editor.codemirror.setLine(line, txt + name);
-      });
+      // END at.js 配置
 
     });
     // END 编辑器相关
@@ -355,30 +332,127 @@
     });
     // END 删除话题
 
-    // 点赞
-    $('.up_btn').click(function (e) {
-      var $this = $(this);
-      var replyId = $this.closest('.reply_area').attr('reply_id');
-      $.ajax({
-        url: '/reply/' + replyId + '/up',
-        method: 'POST',
-      }).done(function (data) {
-        if (data.success) {
-          var currentCount = Number($this.next('.up-count').text().trim()) || 0;
-          if (data.action === 'up') {
-            $this.next('.up-count').text(currentCount + 1);
-            $this.addClass('uped');
-          } else {
-            if (data.action === 'down') {
-              $this.next('.up-count').text(currentCount - 1);
-              $this.removeClass('uped');
-            }
-          }
+    // 用户 hover 在回复框时才显示点赞按钮
+    $('.reply_area').hover(
+      function () {
+        $(this).find('.up_btn').removeClass('invisible');
+      },
+      function () {
+        var $this = $(this);
+        if ($this.find('.up-count').text().trim() === '') {
+          $this.find('.up_btn').addClass('invisible');
         }
       });
-    });
-    // END 点赞
+    // END 用户 hover 在回复框时才显示点赞按钮
+
+
   });
 
 </script>
 <% } %>
+
+<script type="text/javascript">
+  (function(){
+    var timer = null; //对话框延时定时器
+    // 初始化 $('.replies_history')
+    var $repliesHistory = $('.replies_history');
+    var $repliesHistoryContent = $repliesHistory.find('.inner_content');
+    $repliesHistory.hide();
+    // END
+    // 鼠标移入对话框清除隐藏定时器；移出时隐藏对话框
+    $repliesHistory.on('mouseenter', function(){
+      clearTimeout(timer);
+    }).on('mouseleave', function(){
+      $repliesHistory.fadeOut('fast');
+    });
+    // 显示被 at 用户的本页评论
+    if ($('.reply2_item').length === 0) {
+      // 只在流式评论布局中使用
+
+      $('#content').on('mouseenter', '.reply_content a', function (e) {
+        clearTimeout(timer);
+        var $this = $(this);
+        if ($this.text()[0] === '@') {
+          var thisText = $this.text().trim();
+          var loginname = thisText.slice(1);
+          var offset = $this.offset();
+          var width = $this.width();
+          var mainOffset = $('#main').offset();
+          $repliesHistory.css('left', offset.left-mainOffset.left+width+10); // magic number
+          $repliesHistory.css('top', offset.top-mainOffset.top-10); // magic number
+          $repliesHistory.css({
+            'z-index': 1,
+          });
+          $repliesHistoryContent.empty();
+          var chats = [];
+          var replyToId = $this.closest('.reply_item').attr('reply_to_id');
+          while (replyToId) {
+            var $replyItem = $('.reply_item[reply_id=' + replyToId + ']');
+            var replyContent = $replyItem.find('.reply_content').text().trim();
+            if (replyContent.length > 0) {
+              chats.push([
+                $($replyItem.find('.user_avatar').html()).attr({
+                  height: '30px',
+                  width: '30px',
+                }), // avatar
+                (replyContent.length>300?replyContent.substr(0,300)+'...':replyContent), // reply content
+                '<a href="#'+replyToId+'" class="scroll_to_original" title="查看原文">↑</a>'
+              ]);
+            }
+            replyToId = $replyItem.attr('reply_to_id');
+          }
+          if(chats.length > 0) {
+            chats.reverse();
+
+            $repliesHistoryContent.append('<div class="title">查看对话</div>');
+            chats.forEach(function (pair, idx) {
+              var $chat = $repliesHistoryContent.append('<div class="item"></div>');
+              $chat.append(pair[0]); // 头像
+              $chat.append($('<span>').text(pair[1])); // 内容
+              $chat.append(pair[2]); // 查看原文 anchor
+            });
+            $repliesHistory.fadeIn('fast');
+          }else{
+            $repliesHistory.hide();
+          }
+        }
+      }).on('mouseleave', '.reply_content a', function (e) {
+        timer = setTimeout(function(){
+          $repliesHistory.fadeOut('fast');
+        }, 500);
+      });
+    }
+    // END 显示被 at 用户的本页评论
+  })();
+
+  // 点赞
+  $('.up_btn').click(function (e) {
+    var $this = $(this);
+    var replyId = $this.closest('.reply_area').attr('reply_id');
+    $.ajax({
+      url: '/reply/' + replyId + '/up',
+      method: 'POST',
+    }).done(function (data) {
+      if (data.success) {
+        $this.removeClass('invisible');
+        var currentCount = Number($this.next('.up-count').text().trim()) || 0;
+        if (data.action === 'up') {
+          $this.next('.up-count').text(currentCount + 1);
+          $this.addClass('uped');
+        } else {
+          if (data.action === 'down') {
+            $this.next('.up-count').text(currentCount - 1);
+            $this.removeClass('uped');
+          }
+        }
+      } else {
+        alert(data.message);
+      }
+    }).fail(function (xhr) {
+      if (xhr.status === 403) {
+        alert('请先登录，登陆后即可点赞。');
+      }
+    });
+  });
+  // END 点赞
+</script>

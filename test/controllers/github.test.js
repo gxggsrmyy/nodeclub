@@ -5,8 +5,13 @@ var github = require('../../controllers/github');
 var Models = require('../../models');
 var User = Models.User;
 var config = require('../../config');
+var support = require('../support/support');
 
 describe('test/controllers/github.test.js', function () {
+  before(function (done) {
+    support.ready(done);
+  });
+
   afterEach(function () {
     mm.restore();
   });
@@ -30,7 +35,13 @@ describe('test/controllers/github.test.js', function () {
     before(function () {
       app.get('/auth/github/test_callback',
         function (req, res, next) {
-          req.user = {id: 'notexists'};
+          req.user = {
+            id: 'notexists',
+            emails: [
+              {value: 'notexists@gmail.com'}
+            ],
+            _json: {avatar_url: 'http://avatar_url'}
+          };
           next();
         },
         github.callback);
@@ -79,13 +90,16 @@ describe('test/controllers/github.test.js', function () {
 
   describe('post /auth/github/create', function () {
     before(function () {
+      var displayName = 'alsotang' + +new Date();
+      var username = 'alsotang' + +new Date();
+      var email = 'alsotang@gmail.com' + +new Date();
       app.post('/auth/github/test_create', function (req, res, next) {
         req.session.profile = {
-          displayName: 'alsotang' + new Date(),
-          username: 'alsotang' + new Date(),
+          displayName: displayName,
+          username: req.body.githubName || username,
           accessToken: 'a3l24j23lk5jtl35tkjglfdsf',
           emails: [
-            {value: 'alsotang@gmail.com' + new Date()}
+            {value: email}
           ],
           _json: {avatar_url: 'http://avatar_url.com/1.jpg'},
           id: 22
@@ -126,17 +140,17 @@ describe('test/controllers/github.test.js', function () {
     });
 
     it('should link a old user', function (done) {
-      var username = 'Alsotang';
+      var username = 'alsotang' + +new Date();
       var pass = 'hehe';
-      mm(User, 'findOne', function (loginInfo, callback) {
-        loginInfo.loginname.should.equal(username.toLowerCase());
-        callback(null, {save: function () {
-          done();
-        }});
+      support.createUserByNameAndPwd(username, pass, function (user) {
+        request.post('/auth/github/test_create')
+          .send({name: username, pass: pass, githubName: username})
+          .end(function (err, res) {
+            res.status.should.equal(302);
+            res.headers.location.should.equal('/');
+            done(err);
+          });
       });
-      request.post('/auth/github/test_create')
-        .send({name: username, pass: pass})
-        .end();
     });
   });
 });

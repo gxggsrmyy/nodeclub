@@ -1,21 +1,17 @@
-(function(Editor, marked, WebUploader){
-    // configure marked
-    var renderer = new marked.Renderer();
-    renderer.code = function (code, lang) {
-        var ret = '<pre class="prettyprint language-' + lang + '">';
-        ret += '<code>' + code.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code>';
-        ret += '</pre>';
-        return ret;
-    };
-    marked.setOptions({
-        renderer: renderer,
-        gfm: true,
-        tables: true,
-        breaks: true,
-        pedantic: false,
-        sanitize: false,
-        smartLists: true
+(function(Editor, markdownit, WebUploader){
+    // Set default options
+    var md = new markdownit();
+
+    md.set({
+      html:         false,        // Enable HTML tags in source
+      xhtmlOut:     false,        // Use '/' to close single tags (<br />)
+      breaks:       true,        // Convert '\n' in paragraphs into <br>
+      langPrefix:   'language-',  // CSS language prefix for fenced blocks
+      linkify:      false,        // Autoconvert URL-like text to links
+      typographer:  false,        // Enable smartypants and other sweet transforms
     });
+
+    window.markdowniter = md;
 
     var toolbar = Editor.toolbar;
 
@@ -63,7 +59,7 @@
         ].join('')).appendTo($body);
 
         this.$win.on('click', '[role=save]', function(){
-            self.$win.find('form').submit(); 
+            self.$win.find('form').submit();
         }).on('submit', 'form', function(){
             var $el = $(this);
             var title = $el.find('[name=title]').val();
@@ -147,13 +143,13 @@
 
         this.uploader.on('uploadProgress', function(file, percentage){
             // console.log(percentage);
-            self.showProgress(file, percentage * 100); 
+            self.showProgress(file, percentage * 100);
         });
 
         this.uploader.on('uploadSuccess', function(file, res){
             if(res.success){
                 self.$win.modal('hide');
-                self.editor.push(' !['+ file.name +']('+ res.url +')');
+                self.editor.push('!['+ file.name +']('+ res.url +')');
             }
             else{
                 self.removeFile();
@@ -247,4 +243,4 @@
         var line = cm.lastLine();
         cm.setLine(line, cm.getLine(line) + txt);
     };
-})(window.Editor, window.marked, window.WebUploader);
+})(window.Editor, window.markdownit, window.WebUploader);

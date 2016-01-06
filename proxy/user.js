@@ -1,6 +1,7 @@
-var models = require('../models');
-var User = models.User;
+var models  = require('../models');
+var User    = models.User;
 var utility = require('utility');
+var uuid    = require('node-uuid');
 
 /**
  * 根据用户名列表查找用户列表
@@ -38,19 +39,10 @@ exports.getUserByLoginName = function (loginName, callback) {
  * @param {Function} callback 回调函数
  */
 exports.getUserById = function (id, callback) {
+  if (!id) {
+    return callback();
+  }
   User.findOne({_id: id}, callback);
-};
-
-/**
- * 根据用户名，查找用户
- * Callback:
- * - err, 数据库异常
- * - user, 用户
- * @param {String} name 用户名
- * @param {Function} callback 回调函数
- */
-exports.getUserByName = function (name, callback) {
-  User.findOne({name: name}, callback);
 };
 
 /**
@@ -87,7 +79,7 @@ exports.getUsersByIds = function (ids, callback) {
  * @param {Function} callback 回调函数
  */
 exports.getUsersByQuery = function (query, opt, callback) {
-  User.find(query, [], opt, callback);
+  User.find(query, '', opt, callback);
 };
 
 /**
@@ -99,18 +91,20 @@ exports.getUsersByQuery = function (query, opt, callback) {
  * @param {String} key 激活码
  * @param {Function} callback 回调函数
  */
-exports.getUserByQuery = function (name, key, callback) {
-  User.findOne({name: name, retrieve_key: key}, callback);
+exports.getUserByNameAndKey = function (loginname, key, callback) {
+  User.findOne({loginname: loginname, retrieve_key: key}, callback);
 };
 
 exports.newAndSave = function (name, loginname, pass, email, avatar_url, active, callback) {
-  var user = new User();
-  user.name = loginname;
-  user.loginname = loginname;
-  user.pass = pass;
-  user.email = email;
-  user.avatar = avatar_url;
-  user.active = false;
+  var user         = new User();
+  user.name        = loginname;
+  user.loginname   = loginname;
+  user.pass        = pass;
+  user.email       = email;
+  user.avatar      = avatar_url;
+  user.active      = active || false;
+  user.accessToken = uuid.v4();
+
   user.save(callback);
 };
 

@@ -1,7 +1,7 @@
 <div id='sidebar'>
 
   <div class='panel'>
-    <% if (typeof(user) !== 'undefined' || typeof(current_user) !== 'undefined') { %>
+    <% if (typeof(user) !== 'undefined' || current_user) { %>
     <div class='header'>
       <span class='col_fade'>个人信息</span>
     </div>
@@ -18,13 +18,17 @@
         或
         <a href='/signup'>注册</a>
         , 也可以
-        <a href="/auth/github" class="btn btn-info">通过 GitHub 登录</a>
+        <a href="/auth/github">
+          <span class="span-info">
+            通过 GitHub 登录
+          </span>
+        </a>
       </div>
     </div>
     <% } %>
   </div>
 
-  <% if (typeof(current_user) !== 'undefined') { %>
+  <% if (current_user) { %>
   <div class="panel">
     <div class='inner'>
       <a href='/topic/create' id='create_topic_btn'>
@@ -34,7 +38,7 @@
   </div>
   <% } %>
 
-  <% if (typeof(current_user) === 'undefined' || !current_user.isAdvanced) { %>
+  <% if (!current_user || !current_user.isAdvanced) { %>
     <%- partial('./_ads') %>
   <% } %>
 
@@ -74,23 +78,41 @@
   </div>
   <% } %>
 
-  <% if (typeof(site_links) !== 'undefined') { %>
   <div class='panel'>
     <div class='header'>
-      <span class='col_fade'>友情链接</span>
+      <span class='col_fade'>友情社区</span>
     </div>
     <div class='inner'>
-      <% if (site_links.length > 0) { %>
-      <ol>
-        <%site_links.forEach(function (link) {%>
-        <li><a href="<%-link.url%>"><%-link.text%></a></li>
-        <%})%>
+      <ol class="friendship-community">
+        <li>
+          <a href="https://ruby-china.org/" target="_blank">
+            <img src="<%- staticFile('/public/images/ruby-china-20150529.png') %>">
+          </a>
+        </li>
+        <div class="sep10"></div>
+        <li>
+          <a href="http://golangtc.com/" target="_blank">
+            <img src="<%- staticFile('/public/images/golangtc-logo.png') %>">
+          </a>
+        </li>
+        <div class="sep10"></div>
+        <li>
+          <a href="http://phphub.org/" target="_blank">
+            <img src="<%- staticFile('/public/images/phphub-logo.png') %>">
+          </a>
+        </li>
       </ol>
-      <% } else { %>
-      <p>无</p>
-      <% } %>
     </div>
   </div>
-  <% } %>
+  <div class='panel'>
+    <div class='header'>
+      <span class='col_fade'>客户端二维码</span>
+    </div>
+    <div class='inner cnode-app-download'>
+      <img width='200' src="//dn-cnode.qbox.me/FtG0YVgQ6iginiLpf9W4_ShjiLfU">
+      <br />
+      <a href="https://itunes.apple.com/cn/app/id954734793" target="_blank">iOS</a>/<a href="http://fir.im/ks4u" target="_blank">Android</a>
+    </div>
+  </div>
 
 </div>

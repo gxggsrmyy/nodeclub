@@ -9,9 +9,10 @@
  * Module dependencies.
  */
 
-var User = require('../proxy').User;
-var Message = require('./message');
+var User       = require('../proxy').User;
+var Message    = require('./message');
 var EventProxy = require('eventproxy');
+var _          = require('lodash');
 
 /**
  * 从文本中提取出@username 标记的用户名数组
@@ -19,18 +20,37 @@ var EventProxy = require('eventproxy');
  * @return {Array} 用户名数组
  */
 var fetchUsers = function (text) {
-  var results = text.match(/@[a-zA-Z0-9\-_]+/ig);
+  if (!text) {
+    return [];
+  }
+  
+  var ignoreRegexs = [
+    /```.+?```/g, // 去除单行的 ```
+    /^```[\s\S]+?^```/gm, // ``` 里面的是 pre 标签内容
+    /`[\s\S]+?`/g, // 同一行中，`some code` 中内容也不该被解析
+    /^    .*/gm, // 4个空格也是 pre 标签，在这里 . 不会匹配换行
+    /\b\S*?@[^\s]*?\..+?\b/g, // somebody@gmail.com 会被去除
+    /\[@.+?\]\(\/.+?\)/g, // 已经被 link 的 username
+  ];
+
+  ignoreRegexs.forEach(function (ignore_regex) {
+    text = text.replace(ignore_regex, '');
+  });
+
+  var results = text.match(/@[a-z0-9\-_]+\b/igm);
   var names = [];
   if (results) {
     for (var i = 0, l = results.length; i < l; i++) {
       var s = results[i];
-      //remove char @
+      //remove leading char @
       s = s.slice(1);
       names.push(s);
     }
   }
+  names = _.uniq(names);
   return names;
 };
+exports.fetchUsers = fetchUsers;
 
 /**
  * 根据文本内容中读取用户，并发送消息给提到的用户
@@ -39,6 +59,7 @@ var fetchUsers = function (text) {
  * @param {String} text 文本内容
  * @param {String} topicId 主题ID
  * @param {String} authorId 作者ID
+ * @param {String} reply_id 回复ID
  * @param {Function} callback 回调函数
  */
 exports.sendMessageToMentionUsers = function (text, topicId, authorId, reply_id, callback) {
@@ -46,14 +67,19 @@ exports.sendMessageToMentionUsers = function (text, topicId, authorId, reply_id,
     callback = reply_id;
     reply_id = null;
   }
-  callback = callback || function () {
-  };
+  callback = callback || _.noop;
+
   User.getUsersByNames(fetchUsers(text), function (err, users) {
     if (err || !users) {
       return callback(err);
     }
     var ep = new EventProxy();
     ep.fail(callback);
+
+    users = users.filter(function (user) {
+      return !user._id.equals(authorId);
+    });
+
     ep.after('sent', users.length, function () {
       callback();
     });
@@ -76,7 +102,10 @@ exports.linkUsers = function (text, callback) {
   var users = fetchUsers(text);
   for (var i = 0, l = users.length; i < l; i++) {
     var name = users[i];
-    text = text.replace(new RegExp('@' + name + '(?!\s*\\])', 'gmi'), '[@' + name + '](/user/' + name + ')');
+    text = text.replace(new RegExp('@' + name + '\\b(?!\\])', 'g'), '[@' + name + '](/user/' + name + ')');
+  }
+  if (!callback) {
+    return text;
   }
   return callback(null, text);
 };

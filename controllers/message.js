@@ -1,11 +1,7 @@
-var Message = require('../proxy').Message;
+var Message    = require('../proxy').Message;
 var eventproxy = require('eventproxy');
 
 exports.index = function (req, res, next) {
-  if (!req.session.user) {
-    res.redirect('/');
-    return;
-  }
   var user_id = req.session.user._id;
   var ep = new eventproxy();
   ep.fail(next);
@@ -25,18 +21,13 @@ exports.index = function (req, res, next) {
         ep.emit(idx === 0 ? 'has_read_messages' : 'hasnot_read_messages', docs);
       });
       msgs.forEach(function (doc) {
-        Message.getMessageById(doc._id, epfill.group('message_ready'));
+        Message.getMessageRelations(doc, epfill.group('message_ready'));
       });
     });
+    
+    Message.updateMessagesToRead(user_id, unread);
   });
 
   Message.getReadMessagesByUserId(user_id, ep.done('has_read'));
-
-  Message.getUnreadMessageByUserId(user_id, ep.done('unread', function (docs) {
-    docs.forEach(function (doc) {
-      doc.has_read = true;
-      doc.save();
-    });
-    return docs;
-  }));
+  Message.getUnreadMessageByUserId(user_id, ep.done('unread'));
 };
